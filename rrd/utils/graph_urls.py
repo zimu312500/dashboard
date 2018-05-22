@@ -87,9 +87,9 @@ def _generate_graph_urls(graph, counters, endpoint_list, start, end):
             new_g = copy.deepcopy(graph)
             new_g.counters = c
             if end:
-                new_g.src = '''/chart/h?id=%s&start=%s&end=%s''' %(tmp_graph_id, start or (0-graph.timespan), end)
+                new_g.src = '''/chart/h?id=%s&start=%s&end=%s&dgid=%s''' %(tmp_graph_id, start or (0-graph.timespan), end,graph.id)
             else:
-                new_g.src = '''/chart/h?id=%s&start=%s''' %(tmp_graph_id, start or (0-graph.timespan))
+                new_g.src = '''/chart/h?id=%s&start=%s&dgid=%s''' %(tmp_graph_id, start or (0-graph.timespan),graph.id)
             if graph.method == 'SUM':
                 new_g.src += "&sum=on"
             else:
@@ -105,9 +105,9 @@ def _generate_graph_urls(graph, counters, endpoint_list, start, end):
             new_g = copy.deepcopy(graph)
             new_g.hosts = e
             if end:
-                new_g.src = '''/chart/k?id=%s&start=%s&end=%s''' %(tmp_graph_id, start or (0-graph.timespan), end)
+                new_g.src = '''/chart/k?id=%s&start=%s&end=%s&dgid=%s''' %(tmp_graph_id, start or (0-graph.timespan), end,graph.id)
             else:
-                new_g.src = '''/chart/k?id=%s&start=%s''' %(tmp_graph_id, start or (0-graph.timespan))
+                new_g.src = '''/chart/k?id=%s&start=%s&dgid=%s''' %(tmp_graph_id, start or (0-graph.timespan),graph.id)
             if graph.method == 'SUM':
                 new_g.src += "&sum=on"
             else:

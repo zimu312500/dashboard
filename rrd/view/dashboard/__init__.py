@@ -54,6 +54,6 @@ def dashboard_before():
         g.end = g.end - 60
 
         g.id = request.args.get("id") or ""
-
+        g.dgid = request.args.get("dgid") or ""
         g.limit = int(request.args.get("limit") or 0)
         g.page = int(request.args.get("page") or 0)

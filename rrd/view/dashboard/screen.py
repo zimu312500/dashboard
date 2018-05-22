@@ -183,13 +183,14 @@ def dash_graph_add(sid):
         counters = counters and counters.split("\n") or []
         counters = [x.strip() for x in counters]
 
+        relativeday = int(request.form.get("relativeday", 7))
         timespan = int(request.form.get("timespan", 3600))
         graph_type = request.form.get("graph_type", 'h')
         method = request.form.get("method", '').upper()
         position = int(request.form.get("position", 0))
 
         graph = DashboardGraph.add(title, hosts, counters, sid,
-                timespan, graph_type, method, position)
+                timespan,relativeday, graph_type, method, position)
         return redirect("/screen/%s" % sid)
 
     else:

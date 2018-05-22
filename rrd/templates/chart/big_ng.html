@@ -11,6 +11,7 @@
     obj.start={{g.start}};
     obj.end = {{g.end}};
     obj.cf='{{g.cf}}';
+    obj.dgid='{{g.dgid}}';
     obj.sum='{{g.sum}}';
     obj.sumonly='{{g.sumonly}}';
     obj.graph_type='{{g.graph_type}}';
@@ -20,6 +21,7 @@
     obj2.id='{{g.id}}';
     obj2.start=-300;
     obj2.cf='{{g.cf}}';
+    obj2.dgid='{{g.dgid}}';
     obj2.tongbi='{{g.tongbi}}';
     obj2.sum='{{g.sum}}';
     obj2.sumonly='{{g.sumonly}}';
@@ -46,7 +48,7 @@
         <div class="panel panel-default">
             <div class="panel-heading">
                 <a class="btn btn-default btn-xs reset-zoom pull-right">
-                    <span class="glyphicon glyphicon-zoom-out" aria-hidden="true">
+                    <span class="glyphicon glyphicon-zoom-out" aria-hidden="true"/>
                 </a>
                 <div class="btn-group pull-right chart-config">
                     <a class="btn btn-xs btn-default dropdown-toggle" data-toggle="dropdown" href="javascript:;" style="margin-left:0px; vertical-align:top;">
@@ -134,4 +136,3 @@
         </div>
 </div>
 {% endblock %}
-

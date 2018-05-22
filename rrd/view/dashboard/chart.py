@@ -1,4 +1,4 @@
-#-*- coding:utf-8 -*-
+# -*- coding:utf-8 -*-
 # Copyright 2017 Xiaomi, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,19 +12,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
-import urllib
 import json
+import traceback
+import urllib
+
 from flask import request, g, abort, render_template
 
 from rrd import app
 from rrd.consts import GRAPH_TYPE_KEY, GRAPH_TYPE_HOST
-from rrd.utils.rrdgraph import merge_list
-from rrd.utils.rrdgraph import graph_history
+from rrd.model.graph import DashboardGraph
 from rrd.model.tmpgraph import TmpGraph
+from rrd.utils.rrdgraph import graph_history
+from rrd.utils.rrdgraph import merge_list
 
-@app.route("/chart", methods=["POST",])
+
+@app.route("/chart", methods=["POST", ])
 def chart():
     endpoints = request.form.getlist("endpoints[]") or []
     counters = request.form.getlist("counters[]") or []
@@ -42,17 +44,20 @@ def chart():
 
     return json.dumps(ret)
 
-@app.route("/chart/big", methods=["GET",])
+
+@app.route("/chart/big", methods=["GET", ])
 def chart_big():
     return render_template("chart/big_ng.html", **locals())
 
-@app.route("/chart/embed", methods=["GET",])
+
+@app.route("/chart/embed", methods=["GET", ])
 def chart_embed():
     w = request.args.get("w")
     w = int(w) if w else 600
     h = request.args.get("h")
     h = int(h) if h else 200
     return render_template("chart/embed.html", **locals())
+
 
 @app.route("/chart/h", methods=["GET"])
 def multi_endpoints_chart_data():
@@ -61,23 +66,23 @@ def multi_endpoints_chart_data():
 
     j = TmpGraph.get(g.id)
     if not j:
-        abort(400, "no such tmp_graph where id=%s" %g.id)
+        abort(400, "no such tmp_graph where id=%s" % g.id)
 
     counters = j.counters
     if not counters:
-        abort(400, "no counters of %s" %g.id)
+        abort(400, "no counters of %s" % g.id)
     counters = sorted(set(counters))
 
     endpoints = j.endpoints
     if not endpoints:
-        abort(400, "no endpoints of %s" %(g.id,))
+        abort(400, "no endpoints of %s" % (g.id,))
     endpoints = sorted(set(endpoints))
 
     ret = {
         "units": "",
         "title": "",
         "series": []
-   }
+    }
 
     c = counters[0]
     ret['title'] = c
@@ -87,25 +92,47 @@ def multi_endpoints_chart_data():
     for i in range(0, len(query_result)):
         x = query_result[i]
         try:
-            xv = [(v["timestamp"]*1000, v["value"]) for v in x["Values"]]
+            xv = [(v["timestamp"] * 1000, v["value"]) for v in x["Values"]]
             serie = {
-                    "data": xv,
-                    "name": query_result[i]["endpoint"],
-                    "cf": g.cf,
-                    "endpoint": query_result[i]["endpoint"],
-                    "counter": query_result[i]["counter"],
-                    }
+                "data": xv,
+                "name": query_result[i]["endpoint"],
+                "cf": g.cf,
+                "endpoint": query_result[i]["endpoint"],
+                "counter": query_result[i]["counter"],
+            }
             series.append(serie)
         except:
             pass
 
+    # 通过查看dashboard_grap判断是否存在环比看图
+    if g.dgid:
+        dg = DashboardGraph.get(g.dgid)
+        if dg.relativeday > 0:
+            query_result = graph_history(endpoints[:1], counters, g.cf, g.start - dg.relativeday * 24 * 3600,
+                                         g.end - dg.relativeday * 24 * 3600)
+            for i in range(0, len(query_result)):
+                x = query_result[i]
+                try:
+                    xv = [((v["timestamp"] + dg.relativeday * 24 * 3600)* 1000, v["value"]) for v in x["Values"]]
+                    serie = {
+                        "data": xv,
+                        "name": u"[环比:" + str(dg.relativeday) + u"天]" + query_result[i]["endpoint"],
+                        "cf": g.cf,
+                        "endpoint": query_result[i]["endpoint"],
+                        "counter": query_result[i]["counter"],
+                    }
+                    series.append(serie)
+                except:
+                    print(traceback.format_exc())
+                    pass
+
     sum_serie = {
-            "data": [],
-            "name": "sum",
-            "cf": g.cf,
-            "endpoint": "sum",
-            "counter": c,
-            }
+        "data": [],
+        "name": "sum",
+        "cf": g.cf,
+        "endpoint": "sum",
+        "counter": c,
+    }
     if g.sum == "on" or g.sumonly == "on":
         sum = []
         tmp_ts = []
@@ -124,24 +151,24 @@ def multi_endpoints_chart_data():
         series.append(sum_serie)
 
     if g.sumonly == "on":
-        ret['series'] = [sum_serie,]
+        ret['series'] = [sum_serie, ]
     else:
         ret['series'] = series
 
     return json.dumps(ret)
 
+
 @app.route("/chart/k", methods=["GET"])
 def multi_counters_chart_data():
     if not g.id:
         abort(400, "no graph id given")
-
     j = TmpGraph.get(g.id)
     if not j:
-        abort(400, "no such tmp_graph where id=%s" %g.id)
+        abort(400, "no such tmp_graph where id=%s" % g.id)
 
     counters = j.counters
     if not counters:
-        abort(400, "no counters of %s" %g.id)
+        abort(400, "no counters of %s" % g.id)
     counters = sorted(set(counters))
 
     endpoints = j.endpoints
@@ -163,25 +190,47 @@ def multi_counters_chart_data():
     for i in range(0, len(query_result)):
         x = query_result[i]
         try:
-            xv = [(v["timestamp"]*1000, v["value"]) for v in x["Values"]]
+            xv = [(v["timestamp"] * 1000, v["value"]) for v in x["Values"]]
             serie = {
-                    "data": xv,
-                    "name": query_result[i]["counter"],
-                    "cf": g.cf,
-                    "endpoint": query_result[i]["endpoint"],
-                    "counter": query_result[i]["counter"],
-                    }
+                "data": xv,
+                "name": query_result[i]["counter"],
+                "cf": g.cf,
+                "endpoint": query_result[i]["endpoint"],
+                "counter": query_result[i]["counter"],
+            }
             series.append(serie)
         except:
+            print(traceback.format_exc())
             pass
+    # 通过查看dashboard_grap判断是否存在环比看图
+    if g.dgid:
+        dg = DashboardGraph.get(g.dgid)
+        if dg.relativeday > 0:
+            query_result = graph_history(endpoints[:1], counters, g.cf, g.start - dg.relativeday * 24 * 3600,
+                                         g.end - dg.relativeday * 24 * 3600)
+            for i in range(0, len(query_result)):
+                x = query_result[i]
+                try:
+                    xv = [((v["timestamp"] + dg.relativeday * 24 * 3600)* 1000, v["value"]) for v in x["Values"]]
+                    serie = {
+                        "data": xv,
+                        "name": u"[环比:" + str(dg.relativeday) + u"天]" + query_result[i]["counter"],
+                        "cf": g.cf,
+                        "endpoint": query_result[i]["endpoint"],
+                        "counter": query_result[i]["counter"],
+                    }
+                    series.append(serie)
+                except:
+                    print(traceback.format_exc())
+                    pass
 
     sum_serie = {
-            "data": [],
-            "name": "sum",
-            "cf": g.cf,
-            "endpoint": e,
-            "counter": "sum",
-            }
+        "data": [],
+        "name": "sum",
+        "cf": g.cf,
+        "endpoint": e,
+        "counter": "sum",
+    }
     if g.sum == "on" or g.sumonly == "on":
         sum = []
         tmp_ts = []
@@ -200,11 +249,12 @@ def multi_counters_chart_data():
         series.append(sum_serie)
 
     if g.sumonly == "on":
-        ret['series'] = [sum_serie,]
+        ret['series'] = [sum_serie, ]
     else:
         ret['series'] = series
 
     return json.dumps(ret)
+
 
 @app.route("/chart/a", methods=["GET"])
 def multi_chart_data():
@@ -213,16 +263,16 @@ def multi_chart_data():
 
     j = TmpGraph.get(g.id)
     if not j:
-        abort(400, "no such tmp_graph where id=%s" %g.id)
+        abort(400, "no such tmp_graph where id=%s" % g.id)
 
     counters = j.counters
     if not counters:
-        abort(400, "no counters of %s" %g.id)
+        abort(400, "no counters of %s" % g.id)
     counters = sorted(set(counters))
 
     endpoints = j.endpoints
     if not endpoints:
-        abort(400, "no endpoints of %s, and tags:%s" %(g.id, g.tags))
+        abort(400, "no endpoints of %s, and tags:%s" % (g.id, g.tags))
     endpoints = sorted(set(endpoints))
 
     ret = {
@@ -237,25 +287,25 @@ def multi_chart_data():
     for i in range(0, len(query_result)):
         x = query_result[i]
         try:
-            xv = [(v["timestamp"]*1000, v["value"]) for v in x["Values"]]
+            xv = [(v["timestamp"] * 1000, v["value"]) for v in x["Values"]]
             serie = {
-                    "data": xv,
-                    "name": "%s %s" %(query_result[i]["endpoint"], query_result[i]["counter"]),
-                    "cf": g.cf,
-                    "endpoint": "",
-                    "counter": "",
-                    }
+                "data": xv,
+                "name": "%s %s" % (query_result[i]["endpoint"], query_result[i]["counter"]),
+                "cf": g.cf,
+                "endpoint": "",
+                "counter": "",
+            }
             series.append(serie)
         except:
             pass
 
     sum_serie = {
-            "data": [],
-            "name": "sum",
-            "cf": g.cf,
-            "endpoint": "",
-            "counter": "",
-            }
+        "data": [],
+        "name": "sum",
+        "cf": g.cf,
+        "endpoint": "",
+        "counter": "",
+    }
     if g.sum == "on" or g.sumonly == "on":
         sum = []
         tmp_ts = []
@@ -274,11 +324,12 @@ def multi_chart_data():
         series.append(sum_serie)
 
     if g.sumonly == "on":
-        ret['series'] = [sum_serie,]
+        ret['series'] = [sum_serie, ]
     else:
         ret['series'] = series
 
     return json.dumps(ret)
+
 
 @app.route("/charts", methods=["GET"])
 def charts():
@@ -287,16 +338,16 @@ def charts():
 
     j = TmpGraph.get(g.id)
     if not j:
-        abort(400, "no such tmp_graph where id=%s" %g.id)
+        abort(400, "no such tmp_graph where id=%s" % g.id)
 
     counters = j.counters
     if not counters:
-        abort(400, "no counters of %s" %g.id)
+        abort(400, "no counters of %s" % g.id)
     counters = sorted(set(counters))
 
     endpoints = j.endpoints
     if not endpoints:
-        abort(400, "no endpoints of %s" %g.id)
+        abort(400, "no endpoints of %s" % g.id)
     endpoints = sorted(set(endpoints))
 
     chart_urls = []
